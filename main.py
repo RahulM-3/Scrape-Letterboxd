@@ -6,7 +6,48 @@ class letterboxd:
     def __init__(self, username):
         self.profile_url = f'https://letterboxd.com/{username}/'
 
-    
+    def get_user_stat(self):
+        # Make an HTTP GET request to fetch diary content
+        response = requests.get(self.profile_url)
+        tree = html.fromstring(response.content)
+
+        # get user stats
+        raw_user_stat = tree.xpath('//*[@id="content"]/div/section/div/div[4]/div[1]')[0]
+        user_stat = {}
+        for i in range(1, 6):
+            user_stat[raw_user_stat.xpath(f"./h4[{i}]/a/span[2]/text()")[0]] = {
+                raw_user_stat.xpath(f"./h4[{i}]/a/span[1]/text()")[0]
+            }
+        return user_stat
+
+    def get_favorite_films(self):
+        # Make an HTTP GET request to fetch diary content
+        response = requests.get(self.profile_url)
+        tree = html.fromstring(response.content)
+
+        # get user favorite films
+        raw_favorite_films = tree.xpath('//*[@id="favourites"]/ul')[0]
+
+        # get film name and poster
+        favorite_films = []
+        for i in range(1, 5):
+            attribute_data = raw_favorite_films.xpath(f"./li[{i}]/div")[0].attrib
+            movie_name = attribute_data['data-film-slug'].replace("-", " ")
+
+            # get movie poster
+            base_poster_url = "https://a.ltrbxd.com/resized/film-poster"
+            data_film_id = attribute_data["data-film-id"]
+            data_film_slug = attribute_data["data-film-slug"]
+            for i in data_film_id:
+                base_poster_url += "/"+i
+            base_poster_url += "/"+data_film_id
+            base_poster_url += "-"+data_film_slug
+            base_poster_url += "-0-150-0-225-crop.jpg"
+
+            favorite_films.append([movie_name, base_poster_url])
+        
+        return favorite_films
+            
     def get_diary(self, entry=50):
         pages = ceil(entry/50)
     
@@ -28,7 +69,6 @@ class letterboxd:
             
             # get movie poster
             base_poster_url = "https://a.ltrbxd.com/resized/film-poster"
-            # https://a.ltrbxd.com/resized/film-poster/6/3/2/4/4/63244-mankatha-0-35-0-52-crop.jpg?v=a470eb4ca5
             data_film_id = raw_poster_data["data-film-id"]
             data_film_slug = raw_poster_data["data-film-slug"]
             for i in data_film_id:
@@ -54,7 +94,7 @@ class letterboxd:
         return diary
 
 
-finalgof = letterboxd("finalgof")
-det = finalgof.get_diary()
 
+finalgof = letterboxd("Virumaandi_")
+det = finalgof.get_favorite_films()
 print(det)
